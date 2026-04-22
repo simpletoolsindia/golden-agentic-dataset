@@ -439,7 +439,7 @@ def transform_agentic_cot_coding(item: dict, source_id: int) -> dict:
             "tool_usage": [{"tool": tc["name"], "purpose": "code_generation"} for tc in (tool_calls if tool_calls else [{"name": "run_code"}])],
             "next_actions": ["run_tests", "review_code"],
         },
-        "quality_tags": ["verified_source", "rich_reasoning", "code_generation", "cot"] + (["multi_step" if len(tool_calls) > 1 else []]),
+        "quality_tags": ["verified_source", "rich_reasoning", "code_generation", "cot"] + (["multi_step"] if len(tool_calls) > 1 else []),
     }
 
 def transform_glaive_fc(item: dict, source_id: int) -> dict:
