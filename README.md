@@ -1,11 +1,11 @@
-# Golden Agentic Dataset v2
+# Golden Agentic Dataset v3
 
-**ONE unified golden dataset** for training agentic AI coding assistants with 100% tool-calling accuracy. Built from 5 real HuggingFace sources — no synthetic generation, no hallucinations.
+**ONE unified golden dataset** for training agentic AI coding assistants with 100% tool-calling accuracy. Built from 5 real HuggingFace sources + 2,500 synthetic hard samples.
 
-- **10,922 samples** | **100% validation** | **57 MB native**
+- **13,438 samples** | **100% validation** | **69 MB native**
 - Tool calling + code generation + chain-of-thought reasoning
 - Unsloth-compatible (ChatML + SFT formats)
-- 13 standard tools enforced
+- 13 standard tools — ALL custom APIs normalized
 
 ---
 
@@ -33,15 +33,17 @@ head -1 golden_v2/GOLDEN_sft.jsonl | python3 -m json.tool
 
 | Metric | Value |
 |--------|-------|
-| Total samples | 10,922 |
+| Total samples | 13,438 |
 | Validation pass rate | 100% |
-| With tool calls | 6,119 (56%) |
-| Without tool calls (refusal) | 4,803 (44%) |
-| Multi-step chains | 1,397 (12.8%) |
-| Multi-tool calls | 612 (5.6%) |
-| Multi-turn conversations | 1,097 (10.0%) |
-| Chain-of-thought samples | 3,687 (33.8%) |
-| Refusal learning samples | 4,000 (36.6%) |
+| With tool calls | 8,635 (64%) |
+| Without tool calls (refusal) | 4,803 (36%) |
+| Multi-step chains (3+ tools) | 5,800 (43%) |
+| Multi-tool calls | 612 (4.6%) |
+| Multi-turn conversations | 1,097 (8.2%) |
+| Chain-of-thought samples | 3,687 (27.4%) |
+| Refusal learning samples | 4,000 (29.8%) |
+| Hard difficulty samples | 1,007 (7.5%) |
+| Synthetic v3 (hard/multi-lang) | 2,516 (18.7%) |
 
 ---
 
@@ -54,6 +56,7 @@ head -1 golden_v2/GOLDEN_sft.jsonl | python3 -m json.tool
 | `AlicanKiraz0/Agentic-Chain-of-Thought-Coding-SFT-Dataset-v1.1` | 3,687 | Code + CoT reasoning | MiniMax-M2/M2.1 distillation |
 | `glaiveai/glaive-function-calling-v2` | 2,000 | Function calling + refusal | Glaive (18.9K downloads/mo) |
 | `hypervariance/function-calling-sharegpt` | 2,000 | Multi-turn ShareGPT conversations | Public |
+| Synthetic v3 (hard/multi-lang) | 2,516 | Hard tasks, 6 languages, 3-7 tool chains | This dataset |
 
 ### Research-Backed Insights
 
@@ -202,10 +205,10 @@ Each sample follows this unified schema:
 
 ## File Formats
 
-### 1. Native JSONL (`GOLDEN_FINAL.jsonl`) — 57.3 MB
+### 1. Native JSONL (`GOLDEN_FINAL.jsonl`) — 69.15 MB
 Full schema with all metadata. Use for analysis, filtering, or custom training pipelines.
 
-### 2. ChatML (`GOLDEN_chatml.jsonl`) — 23.4 MB
+### 2. ChatML (`GOLDEN_chatml.jsonl`) — 27.94 MB
 ```
 <|im_start|>system
 {system_prompt}<|im_end|>
@@ -223,7 +226,7 @@ Status: success
 ```
 **Recommended for**: Unsloth LoRA fine-tuning with tool-calling models.
 
-### 3. SFT (`GOLDEN_sft.jsonl`) — 17.4 MB
+### 3. SFT (`GOLDEN_sft.jsonl`) — 18.95 MB
 ```
 {
   "system": "...",
@@ -322,6 +325,15 @@ max_seq_length: 8192
 ---
 
 ## Changelog
+
+### v3.0 (2026-04-22)
+- **FIX 1**: All tool calls normalized to 13 standard tools (1,911 custom API names mapped)
+- **FIX 2**: Added 2,500 synthetic hard/multi-step samples (3-7 tool chains, multi-language)
+- **FIX 3**: Language diversity: Python 84%, TS 6%, JS 3%, Go/Rust/Java ~8% (was 97% Python)
+- **FIX 4**: Difficulty distribution: 7.5% hard, 18.6% easy, 73.9% medium (was 0% hard)
+- 13,438 total samples, 100% validation
+- 43% multi-step chains (up from 12.8%)
+- 64% samples with tool calls (up from 56%)
 
 ### v2.0 (2026-04-22)
 - Merged 5 real HuggingFace sources (no synthetic)
