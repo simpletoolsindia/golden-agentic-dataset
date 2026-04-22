@@ -1,0 +1,21 @@
+# Large dataset files - hosted separately on HuggingFace
+# Download with: python3 research/build_golden.py
+*.jsonl
+*.jsonl.zst
+
+# Raw downloads
+research/raw_downloads/
+
+# Legacy XML
+xml_converted/
+final/
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+
+# OS
+.DS_Store
+Thumbs.db
