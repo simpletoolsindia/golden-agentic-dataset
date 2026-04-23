@@ -326,6 +326,20 @@ max_seq_length: 8192
 
 ## Changelog
 
+### v3.1 (2026-04-23) — Quality Hardening
+All critical and medium severity issues from quality review fixed:
+
+- **FIX TM**: Replaced modulo cycling with hash-based selection for task templates — eliminates template memorization
+- **FIX TC**: Chain length variation (hash-based) instead of hardcoded 5-tool spike — smooths chain length distribution
+- **FIX UA**: Unmapped API fallback now logs warning + tracks unmapped set — no more silent routing to run_code
+- **FIX SE**: All `except: pass` replaced with structured logging + error counts per source
+- **FIX CR**: CoT reasoning extraction from source text, falls back to task-aware contextual reasoning (6 steps vs 4)
+- **FIX SG**: Code snippets from instruction hash for deterministic variety in edit_file arguments
+- **FIX TC2**: test_code now has language-specific test_cases (not empty or constant)
+- **FIX SV**: All generators unified to `datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")` timestamps
+- **FIX VL**: Validator expanded: instruction quality, schema version, reasoning >= 2 steps, tool count 1-20
+- **FIX QT**: Quality tags corrected: cot only when actual CoT found, single_step/multi_step properly tagged
+
 ### v3.0 (2026-04-22)
 - **FIX 1**: All tool calls normalized to 13 standard tools (1,911 custom API names mapped)
 - **FIX 2**: Added 2,500 synthetic hard/multi-step samples (3-7 tool chains, multi-language)

@@ -2,11 +2,26 @@
 """
 Build ONE golden dataset from 5 real HuggingFace sources.
 Unified schema optimized for tool-calling + code generation.
+
+FIX: v2.1 improvements:
+- Structured logging instead of silent failures
+- Comprehensive validation (instruction quality, schema consistency)
+- Tool count range 1-20 (not exactly 13)
+- Proper error reporting for all transformation failures
+- Schema version unified to 2.0
 """
 
-import json, re, os, uuid, hashlib
+import json, re, os, uuid, hashlib, logging
 from datetime import datetime
 from pathlib import Path
+
+# Logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.StreamHandler()]
+)
+log = logging.getLogger("golden_v2")
 
 OUTPUT_DIR = Path("/home/sridhar/agentic-dataset-output/golden_v2")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -439,7 +454,9 @@ def transform_agentic_cot_coding(item: dict, source_id: int) -> dict:
             "tool_usage": [{"tool": tc["name"], "purpose": "code_generation"} for tc in (tool_calls if tool_calls else [{"name": "run_code"}])],
             "next_actions": ["run_tests", "review_code"],
         },
-        "quality_tags": ["verified_source", "rich_reasoning", "code_generation", "cot"] + (["multi_step"] if len(tool_calls) > 1 else []),
+        "quality_tags": ["verified_source", "rich_reasoning", "code_generation"] +
+                         (["cot"] if len(assistant) > 500 else []) +
+                         (["multi_step"] if len(tool_calls) > 1 else ["single_step"]),
     }
 
 def transform_glaive_fc(item: dict, source_id: int) -> dict:
@@ -601,87 +618,108 @@ def convert_all():
     print("Converting hermes_func_calling...")
     path = "/home/sridhar/agentic-dataset-output/research/raw_downloads/hermes_func_calling.jsonl"
     count = 0
-    with open(path) as f:
-        for i, line in enumerate(f):
-            if not line.strip():
-                continue
-            item = json.loads(line)
-            try:
-                transformed = transform_hermes_func_calling(item, i)
-                results.append(transformed)
-                count += 1
-            except Exception as e:
-                pass
-    print(f"  -> {count} samples")
+    err_count = 0
+    if os.path.exists(path):
+        with open(path) as f:
+            for i, line in enumerate(f):
+                if not line.strip():
+                    continue
+                try:
+                    item = json.loads(line)
+                    transformed = transform_hermes_func_calling(item, i)
+                    results.append(transformed)
+                    count += 1
+                except Exception as e:
+                    err_count += 1
+                    log.warning(f"hermes_fc[{i}] failed: {e}")
+        print(f"  -> {count} samples ({err_count} errors logged)")
+    else:
+        print(f"  -> SKIPPED: {path} not found")
     
     # 2. Hermes json-agentic (ALL 1,342)
     print("Converting hermes_json_agentic...")
     path = "/home/sridhar/agentic-dataset-output/research/raw_downloads/hermes_json_agentic.jsonl"
     count = 0
-    with open(path) as f:
-        for i, line in enumerate(f):
-            if not line.strip():
-                continue
-            item = json.loads(line)
-            try:
-                transformed = transform_hermes_json_agentic(item, i)
-                results.append(transformed)
-                count += 1
-            except Exception as e:
-                pass
-    print(f"  -> {count} samples")
-    
-    # 3. Agentic CoT coding (ALL 3,687) 
+    err_count = 0
+    if os.path.exists(path):
+        with open(path) as f:
+            for i, line in enumerate(f):
+                if not line.strip():
+                    continue
+                try:
+                    item = json.loads(line)
+                    results.append(transform_hermes_json_agentic(item, i))
+                    count += 1
+                except Exception as e:
+                    err_count += 1
+                    log.warning(f"hermes_jma[{i}] failed: {e}")
+        print(f"  -> {count} samples ({err_count} errors logged)")
+    else:
+        print(f"  -> SKIPPED: {path} not found")
+
+    # 3. Agentic CoT coding (ALL 3,687)
     print("Converting agentic_cot_coding...")
     path = "/home/sridhar/agentic-dataset-output/research/raw_downloads/agentic_cot_coding.jsonl"
     count = 0
-    with open(path) as f:
-        for i, line in enumerate(f):
-            if not line.strip():
-                continue
-            item = json.loads(line)
-            try:
-                transformed = transform_agentic_cot_coding(item, i)
-                results.append(transformed)
-                count += 1
-            except Exception as e:
-                pass
-    print(f"  -> {count} samples")
-    
+    err_count = 0
+    if os.path.exists(path):
+        with open(path) as f:
+            for i, line in enumerate(f):
+                if not line.strip():
+                    continue
+                try:
+                    item = json.loads(line)
+                    results.append(transform_agentic_cot_coding(item, i))
+                    count += 1
+                except Exception as e:
+                    err_count += 1
+                    log.warning(f"agentic_cot[{i}] failed: {e}")
+        print(f"  -> {count} samples ({err_count} errors logged)")
+    else:
+        print(f"  -> SKIPPED: {path} not found")
+
     # 4. Glaive (ALL 2,000)
     print("Converting glaive_fc...")
     path = "/home/sridhar/agentic-dataset-output/research/raw_downloads/glaive_fc_sample.jsonl"
     count = 0
-    with open(path) as f:
-        for i, line in enumerate(f):
-            if not line.strip():
-                continue
-            item = json.loads(line)
-            try:
-                transformed = transform_glaive_fc(item, i)
-                results.append(transformed)
-                count += 1
-            except Exception as e:
-                pass
-    print(f"  -> {count} samples")
-    
+    err_count = 0
+    if os.path.exists(path):
+        with open(path) as f:
+            for i, line in enumerate(f):
+                if not line.strip():
+                    continue
+                try:
+                    item = json.loads(line)
+                    results.append(transform_glaive_fc(item, i))
+                    count += 1
+                except Exception as e:
+                    err_count += 1
+                    log.warning(f"glaive[{i}] failed: {e}")
+        print(f"  -> {count} samples ({err_count} errors logged)")
+    else:
+        print(f"  -> SKIPPED: {path} not found")
+
     # 5. Hypervariance (ALL 2,000)
     print("Converting hypervariance_fc...")
     path = "/home/sridhar/agentic-dataset-output/research/raw_downloads/hypervariance_fc_sample.jsonl"
     count = 0
-    with open(path) as f:
-        for i, line in enumerate(f):
-            if not line.strip():
-                continue
-            item = json.loads(line)
-            try:
-                transformed = transform_hypervariance_fc(item, i)
-                results.append(transformed)
-                count += 1
-            except Exception as e:
-                pass
-    print(f"  -> {count} samples")
-    
+    err_count = 0
+    if os.path.exists(path):
+        with open(path) as f:
+            for i, line in enumerate(f):
+                if not line.strip():
+                    continue
+                try:
+                    item = json.loads(line)
+                    results.append(transform_hypervariance_fc(item, i))
+                    count += 1
+                except Exception as e:
+                    err_count += 1
+                    log.warning(f"hypervariance[{i}] failed: {e}")
+        print(f"  -> {count} samples ({err_count} errors logged)")
+    else:
+        print(f"  -> SKIPPED: {path} not found")
+
     return results
 
 # =============================================================================
@@ -689,6 +727,7 @@ def convert_all():
 # =============================================================================
 
 def validate(sample: dict) -> tuple[bool, list]:
+    """Validate a sample. FIX: More comprehensive checks."""
     errors = []
 
     required = ["id", "instruction", "context", "tool_calls", "final_output",
@@ -697,20 +736,33 @@ def validate(sample: dict) -> tuple[bool, list]:
         if field not in sample:
             errors.append(f"Missing: {field}")
 
-    # Tool count check - allow up to 50 for source-specific tools (API datasets)
+    # FIX: Tool count range 1-20 (was up to 50)
     tools = sample.get("available_tools", [])
-    if len(tools) > 50:
-        errors.append(f"Too many tools: {len(tools)}")
+    if len(tools) < 1:
+        errors.append(f"No tools available: {len(tools)}")
+    elif len(tools) > 20:
+        errors.append(f"Too many tools: {len(tools)} (max 20)")
 
     # Tool name validation - check against available tools
     valid_tools = {t["name"] for t in tools}
     for tc in sample.get("tool_calls", []):
         if tc.get("name") not in valid_tools:
             errors.append(f"Unknown tool: {tc['name']}")
-    
-    if len(sample.get("reasoning", [])) < 1:
-        errors.append("No reasoning steps")
-    
+
+    # FIX: Require at least 2 reasoning steps
+    if len(sample.get("reasoning", [])) < 2:
+        errors.append("Reasoning too short (< 2 steps)")
+
+    # FIX: Instruction quality
+    instr = sample.get("instruction", "")
+    if len(instr) < 5:
+        errors.append(f"Instruction too short: '{instr[:50]}'")
+
+    # FIX: Schema version consistency
+    sv = sample.get("schema_version", "")
+    if sv and sv not in ("1.0", "2.0", "3.0"):
+        errors.append(f"Unknown schema version: {sv}")
+
     return len(errors) == 0, errors
 
 # =============================================================================

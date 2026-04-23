@@ -378,7 +378,12 @@ class UltraGoldenGenerator:
                 "tool_usage": [{"tool": tc["name"], "purpose": "context" if i == 0 else "modification"} for i, tc in enumerate(tool_calls)],
                 "next_actions": []
             },
-            "quality_tags": ["multi_step"] if len(tool_calls) >= 4 else [] + (["high_stakes"] if category in ["security_hardening", "debug_investigation"] else [])
+            "quality_tags": (
+                ["multi_step", "high_stakes"] if len(tool_calls) >= 4 and category in ["security_hardening", "debug_investigation"] else
+                ["multi_step"] if len(tool_calls) >= 4 else
+                ["high_stakes"] if category in ["security_hardening", "debug_investigation"] else
+                []
+            )
         }
 
     def generate_batch(self, count: int):
